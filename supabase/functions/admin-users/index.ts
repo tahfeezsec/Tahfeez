@@ -212,7 +212,7 @@ Deno.serve(async (request) => {
         password: accountPassword,
         email_confirm: true,
         app_metadata: { role, its_id: accountItsId },
-        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program },
+        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program, role, its_id: accountItsId },
       });
       if (createError || !created.user) {
         if (createError?.message.toLowerCase().includes("already")) {
@@ -337,7 +337,7 @@ Deno.serve(async (request) => {
       const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(managedUserId, {
         email: newEmail,
         app_metadata: { role, its_id: accountItsId },
-        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program },
+        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program, role, its_id: accountItsId },
       });
 
       if (authUpdateError) {

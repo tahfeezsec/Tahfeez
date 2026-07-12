@@ -1,6 +1,6 @@
 -- Migration to add marhala and program columns and update trigger
-alter table public.profiles add column marhala text;
-alter table public.profiles add column program text;
+alter table public.profiles add column if not exists marhala text;
+alter table public.profiles add column if not exists program text;
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -9,9 +9,9 @@ security definer
 set search_path = public
 as $$
 declare
-  requested_role text := new.raw_app_meta_data ->> 'role';
+  requested_role text := coalesce(new.raw_app_meta_data ->> 'role', new.raw_user_meta_data ->> 'role');
   assigned_role public.app_role;
-  requested_its_id text := new.raw_app_meta_data ->> 'its_id';
+  requested_its_id text := coalesce(new.raw_app_meta_data ->> 'its_id', new.raw_user_meta_data ->> 'its_id');
   requested_name text := trim(coalesce(new.raw_user_meta_data ->> 'full_name', ''));
   requested_phone text := nullif(trim(coalesce(new.raw_user_meta_data ->> 'phone', '')), '');
   requested_email text := nullif(trim(coalesce(new.raw_user_meta_data ->> 'public_email', '')), '');
