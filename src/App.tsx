@@ -42,7 +42,7 @@ function navigate(path: AdminPath | "/") {
 async function getProfile(userId: string): Promise<Profile> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, its_id, role, full_name, phone, email, created_at")
+    .select("id, its_id, role, full_name, phone, email, marhala, program, created_at")
     .eq("id", userId)
     .single();
 
@@ -373,6 +373,12 @@ function MemberDashboard({ profile, onSignOut }: { profile: Profile; onSignOut: 
             <p className="card-label">Your account</p>
             <dl className="account-details">
               <div><dt>ITS ID</dt><dd>{profile.its_id}</dd></div>
+              {isStudent && (
+                <>
+                  <div><dt>Marhala</dt><dd>{profile.marhala || "Not assigned"}</dd></div>
+                  <div><dt>Program</dt><dd>{profile.program || "Not assigned"}</dd></div>
+                </>
+              )}
               <div><dt>Email</dt><dd>{profile.email || "Not recorded"}</dd></div>
               <div><dt>Phone</dt><dd>{profile.phone || "Not recorded"}</dd></div>
             </dl>
@@ -463,6 +469,7 @@ function ManagementPage({ role }: { role: ManagedRole }) {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const roleLabel = role === "student" ? "Student" : "Muhaffiz";
 
   const invoke = useCallback(async (body: Record<string, unknown>) => {
@@ -493,6 +500,19 @@ function ManagementPage({ role }: { role: ManagedRole }) {
     try {
       await invoke({ action: "create", role, ...payload });
       setNotice(`${roleLabel} account created successfully.`);
+      await loadDirectory();
+    } catch (caught) {
+      setError(messageFrom(caught));
+      throw caught;
+    }
+  };
+
+  const updateUser = async (payload: Record<string, unknown>) => {
+    setError("");
+    setNotice("");
+    try {
+      await invoke({ action: "update", ...payload });
+      setNotice(`${roleLabel} account updated successfully.`);
       await loadDirectory();
     } catch (caught) {
       setError(messageFrom(caught));
@@ -564,9 +584,18 @@ function ManagementPage({ role }: { role: ManagedRole }) {
         ) : directory.users.length === 0 ? (
           <div className="empty-state">No {roleLabel.toLowerCase()} accounts yet. Create the first one above.</div>
         ) : (
-          <UserDirectory users={directory.users} fields={directory.fields} onDelete={removeUser} onReset={resetPassword} />
+          <UserDirectory users={directory.users} fields={directory.fields} onDelete={removeUser} onReset={resetPassword} onEdit={setEditingUser} />
         )}
       </section>
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          fields={directory.fields}
+          onClose={() => setEditingUser(null)}
+          onSave={updateUser}
+        />
+      )}
     </div>
   );
 }
@@ -580,7 +609,7 @@ function UserCreateForm({
   fields: UserField[];
   onCreate: (payload: Record<string, unknown>) => Promise<void>;
 }) {
-  const [form, setForm] = useState({ itsId: "", password: "", fullName: "", phone: "", email: "" });
+  const [form, setForm] = useState({ itsId: "", password: "", fullName: "", phone: "", email: "", marhala: "", program: "" });
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const label = role === "student" ? "student" : "Muhaffiz";
@@ -591,7 +620,7 @@ function UserCreateForm({
     setSubmitting(true);
     try {
       await onCreate({ ...form, customValues });
-      setForm({ itsId: "", password: "", fullName: "", phone: "", email: "" });
+      setForm({ itsId: "", password: "", fullName: "", phone: "", email: "", marhala: "", program: "" });
       setCustomValues({});
     } catch {
       // The parent displays the server-safe error message.
@@ -610,6 +639,14 @@ function UserCreateForm({
         <label>Initial password<input required minLength={10} type="password" autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="At least 10 characters" /></label>
         <label>Phone number<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} type="tel" autoComplete="tel" /></label>
         <label>Email<input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} type="email" autoComplete="email" /></label>
+        
+        {role === "student" && (
+          <>
+            <label>Marhala<input value={form.marhala} onChange={(event) => setForm({ ...form, marhala: event.target.value })} placeholder="e.g. Stage 1" /></label>
+            <label>Program<input value={form.program} onChange={(event) => setForm({ ...form, program: event.target.value })} placeholder="e.g. Full Hifz" /></label>
+          </>
+        )}
+
         {fields.map((field) => (
           <DynamicField key={field.id} field={field} value={customValues[field.id] || ""} onChange={(value) => setCustomValues({ ...customValues, [field.id]: value })} />
         ))}
@@ -675,11 +712,13 @@ function UserDirectory({
   fields,
   onDelete,
   onReset,
+  onEdit,
 }: {
   users: ManagedUser[];
   fields: UserField[];
   onDelete: (user: ManagedUser) => Promise<void>;
   onReset: (user: ManagedUser) => Promise<void>;
+  onEdit: (user: ManagedUser) => void;
 }) {
   const valuesFor = (user: ManagedUser) => new Map(user.profile_field_values.map((value) => [value.field_id, value.value]));
 
@@ -690,11 +729,116 @@ function UserDirectory({
         return (
           <article className="user-row" key={user.id}>
             <div className="user-primary"><div className="avatar">{user.full_name.charAt(0).toUpperCase()}</div><div><h3>{user.full_name}</h3><p>ITS ID · {user.its_id}</p></div></div>
-            <div className="user-details"><span>{user.email || "No email"}</span><span>{user.phone || "No phone"}</span>{fields.map((field) => <span key={field.id}><strong>{field.label}:</strong> {String(values.get(field.id) ?? "—")}</span>)}</div>
-            <div className="user-actions"><button className="text-link" type="button" onClick={() => void onReset(user)}>Reset password</button><button className="text-link danger-link" type="button" onClick={() => void onDelete(user)}>Remove</button></div>
+            <div className="user-details">
+              <span>{user.email || "No email"}</span>
+              <span>{user.phone || "No phone"}</span>
+              {user.role === "student" && (
+                <>
+                  <span><strong>Marhala:</strong> {user.marhala || "—"}</span>
+                  <span><strong>Program:</strong> {user.program || "—"}</span>
+                </>
+              )}
+              {fields.map((field) => <span key={field.id}><strong>{field.label}:</strong> {String(values.get(field.id) ?? "—")}</span>)}
+            </div>
+            <div className="user-actions">
+              <button className="text-link" type="button" onClick={() => onEdit(user)}>Edit</button>
+              <button className="text-link" type="button" onClick={() => void onReset(user)}>Reset password</button>
+              <button className="text-link danger-link" type="button" onClick={() => void onDelete(user)}>Remove</button>
+            </div>
           </article>
         );
       })}
+    </div>
+  );
+}
+
+interface EditUserModalProps {
+  user: ManagedUser;
+  fields: UserField[];
+  onClose: () => void;
+  onSave: (payload: Record<string, unknown>) => Promise<void>;
+}
+
+function EditUserModal({ user, fields, onClose, onSave }: EditUserModalProps) {
+  const [form, setForm] = useState({
+    fullName: user.full_name || "",
+    itsId: user.its_id || "",
+    phone: user.phone || "",
+    email: user.email || "",
+    marhala: user.marhala || "",
+    program: user.program || "",
+  });
+  
+  const initialCustomValues = useMemo(() => {
+    const map: Record<string, string> = {};
+    user.profile_field_values.forEach((v) => {
+      map[v.field_id] = String(v.value ?? "");
+    });
+    return map;
+  }, [user]);
+
+  const [customValues, setCustomValues] = useState<Record<string, string>>(initialCustomValues);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!isValidItsId(form.itsId)) {
+      setError("ITS ID must contain exactly 8 digits.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      await onSave({
+        userId: user.id,
+        ...form,
+        customValues,
+      });
+      onClose();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to save updates.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Edit {user.role === "student" ? "Student" : "Muhaffiz"}</h2>
+          <button className="close-button" type="button" onClick={onClose} aria-label="Close modal">&times;</button>
+        </div>
+        {error && <p className="form-error" role="alert" style={{ margin: "0 0 1rem 0" }}>{error}</p>}
+        <form className="management-form" onSubmit={submit}>
+          <label>Full name<input required value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} /></label>
+          <label>ITS ID<input required inputMode="numeric" pattern="[0-9]{8}" maxLength={8} value={form.itsId} onChange={(event) => setForm({ ...form, itsId: event.target.value.replace(/\D/g, "").slice(0, 8) })} placeholder="8 digits" /></label>
+          <label>Phone number<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} type="tel" autoComplete="tel" /></label>
+          <label>Email<input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} type="email" autoComplete="email" /></label>
+          
+          {user.role === "student" && (
+            <>
+              <label>Marhala<input value={form.marhala} onChange={(event) => setForm({ ...form, marhala: event.target.value })} placeholder="e.g. Stage 1" /></label>
+              <label>Program<input value={form.program} onChange={(event) => setForm({ ...form, program: event.target.value })} placeholder="e.g. Full Hifz" /></label>
+            </>
+          )}
+
+          {fields.map((field) => (
+            <DynamicField
+              key={field.id}
+              field={field}
+              value={customValues[field.id] || ""}
+              onChange={(value) => setCustomValues({ ...customValues, [field.id]: value })}
+            />
+          ))}
+
+          <div className="modal-actions" style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
+            <button className="button button-outline" type="button" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+            <button className="button button-primary" disabled={submitting} type="submit" style={{ flex: 1 }}>{submitting ? "Saving…" : "Save changes"}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

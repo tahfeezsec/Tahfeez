@@ -163,7 +163,7 @@ Deno.serve(async (request) => {
       const [{ data: users, error: usersError }, { data: fields, error: fieldsError }] = await Promise.all([
         adminClient
           .from("profiles")
-          .select("id, its_id, role, full_name, phone, email, created_at, profile_field_values(field_id, value)")
+          .select("id, its_id, role, full_name, phone, email, marhala, program, created_at, profile_field_values(field_id, value)")
           .eq("role", role)
           .order("full_name"),
         adminClient
@@ -183,6 +183,8 @@ Deno.serve(async (request) => {
       const fullName = requiredText(body.fullName, "Full name", 2, 120);
       const phone = optionalText(body.phone, "Phone number", 40);
       const publicEmail = email(body.email);
+      const marhala = role === "student" ? optionalText(body.marhala, "Marhala", 120) : null;
+      const program = role === "student" ? optionalText(body.program, "Program", 120) : null;
       const submittedValues = customValues(body.customValues);
       const { data: fields, error: fieldsError } = await adminClient
         .from("user_fields")
@@ -210,7 +212,7 @@ Deno.serve(async (request) => {
         password: accountPassword,
         email_confirm: true,
         app_metadata: { role, its_id: accountItsId },
-        user_metadata: { full_name: fullName, phone, public_email: publicEmail },
+        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program },
       });
       if (createError || !created.user) {
         if (createError?.message.toLowerCase().includes("already")) {
@@ -285,6 +287,101 @@ Deno.serve(async (request) => {
 
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(managedUserId);
       if (deleteError) throw new ApiError("Unable to remove the account.", 500);
+      return response({ success: true });
+    }
+
+    if (action === "update") {
+      const managedUserId = userId(body.userId);
+      const fullName = requiredText(body.fullName, "Full name", 2, 120);
+      const phone = optionalText(body.phone, "Phone number", 40);
+      const publicEmail = email(body.email);
+      const accountItsId = itsId(body.itsId);
+      
+      const { data: target, error: targetError } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", managedUserId)
+        .single();
+      if (targetError || !target) {
+        throw new ApiError("Managed account not found.", 404);
+      }
+      
+      const role = target.role as ManagedRole;
+      const marhala = role === "student" ? optionalText(body.marhala, "Marhala", 120) : null;
+      const program = role === "student" ? optionalText(body.program, "Program", 120) : null;
+      const submittedValues = customValues(body.customValues);
+
+      const { data: fields, error: fieldsError } = await adminClient
+        .from("user_fields")
+        .select("id, field_type, select_options, is_required")
+        .eq("target_role", role);
+      if (fieldsError) throw new ApiError("Unable to validate custom fields.", 500);
+
+      const fieldMap = new Map((fields || []).map((field) => [field.id, field]));
+      if (Object.keys(submittedValues).some((fieldId) => !fieldMap.has(fieldId))) {
+        throw new ApiError("A custom field is no longer available. Refresh and try again.");
+      }
+      for (const field of fields || []) {
+        const submittedValue = submittedValues[field.id];
+        if (field.is_required && !submittedValue?.trim()) {
+          throw new ApiError("Please complete every required custom field.");
+        }
+        if (field.field_type === "select" && submittedValue && !field.select_options.includes(submittedValue)) {
+          throw new ApiError("A selected custom field value is invalid.");
+        }
+        if (field.field_type === "number" && submittedValue) valueForField(submittedValue, "number");
+      }
+
+      const newEmail = `${accountItsId}@${Deno.env.get("AUTH_INTERNAL_DOMAIN") || "auth.tahfeez.local"}`;
+      
+      const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(managedUserId, {
+        email: newEmail,
+        app_metadata: { role, its_id: accountItsId },
+        user_metadata: { full_name: fullName, phone, public_email: publicEmail, marhala, program },
+      });
+
+      if (authUpdateError) {
+        if (authUpdateError.message.toLowerCase().includes("already")) {
+          throw new ApiError("An account with that ITS ID already exists.");
+        }
+        console.error("Auth update error", authUpdateError);
+        throw new ApiError("Unable to update account credentials.", 500);
+      }
+
+      const { error: profileUpdateError } = await adminClient
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          its_id: accountItsId,
+          phone: phone,
+          email: publicEmail,
+          marhala: marhala,
+          program: program,
+        })
+        .eq("id", managedUserId);
+      
+      if (profileUpdateError) {
+        console.error("Profile update error", profileUpdateError);
+        throw new ApiError("Unable to update profile record.", 500);
+      }
+
+      await adminClient.from("profile_field_values").delete().eq("profile_id", managedUserId);
+
+      const values = (fields || [])
+        .filter((field) => submittedValues[field.id]?.trim())
+        .map((field) => ({
+          profile_id: managedUserId,
+          field_id: field.id,
+          value: valueForField(submittedValues[field.id], field.field_type as FieldType),
+        }));
+      if (values.length > 0) {
+        const { error: valueError } = await adminClient.from("profile_field_values").insert(values);
+        if (valueError) {
+          console.error("Custom fields update error", valueError);
+          throw new ApiError("Unable to save custom field values.", 500);
+        }
+      }
+
       return response({ success: true });
     }
 

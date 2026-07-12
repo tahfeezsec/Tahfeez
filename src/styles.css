@@ -174,3 +174,71 @@ input:focus, select:focus { border-color: #ab8735; box-shadow: 0 0 0 3px rgba(20
   .overview-actions { grid-template-columns: 1fr; }
 }
 
+
+/* Modal Overlays and Cards */
+.modal-overlay {
+  align-items: center;
+  background: rgba(24, 60, 44, 0.45);
+  backdrop-filter: blur(5px);
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.modal-card {
+  background: #fffdf8;
+  border: 1px solid #e1e7dd;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(25, 59, 40, 0.15);
+  max-width: 650px;
+  padding: 32px;
+  width: calc(100% - 40px);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+  align-items: center;
+  border-bottom: 1px solid #eef1eb;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 26px;
+  margin: 0;
+}
+
+.close-button {
+  background: transparent;
+  border: 0;
+  color: #718076;
+  font-size: 28px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: #9a3a2b;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

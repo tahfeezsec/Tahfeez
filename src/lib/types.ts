@@ -8,6 +8,8 @@ export interface Profile {
   full_name: string;
   phone: string | null;
   email: string | null;
+  marhala: string | null;
+  program: string | null;
   created_at: string;
 }
 
