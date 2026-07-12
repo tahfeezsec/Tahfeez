@@ -37,7 +37,7 @@ try {
   console.log(`Created ${login} administrator (${data.user.id}).`);
   console.log("Remove ADMIN_PASSWORD from your shell or local environment file after setup.");
 } catch (error) {
-  console.error(error instanceof Error ? error.message : "Unable to create the administrator.");
+  console.error("Full error:", error);
   process.exitCode = 1;
 }
 
