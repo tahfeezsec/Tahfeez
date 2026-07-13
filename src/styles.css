@@ -37,11 +37,11 @@ p { line-height: 1.6; }
 .danger-link { color: #9a3a2b; }
 
 .auth-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(430px, .9fr); min-height: 100vh; }
-.auth-welcome { background: radial-gradient(circle at 80% 20%, rgba(225, 198, 118, .22), transparent 25rem), linear-gradient(135deg, #e8efe5, #f6f1e5); display: flex; flex-direction: column; justify-content: center; min-height: 100%; overflow: hidden; padding: clamp(36px, 8vw, 115px); position: relative; }
+.auth-welcome { background: linear-gradient(135deg, rgba(246, 241, 229, 0.94), rgba(246, 241, 229, 0.7)), url('/wallpaper.jpg') center/cover no-repeat; display: flex; flex-direction: column; justify-content: center; min-height: 100%; overflow: hidden; padding: clamp(36px, 8vw, 115px); position: relative; }
 .auth-welcome h1 { font-size: clamp(42px, 5vw, 74px); line-height: 1.02; margin: 44px 0 23px; max-width: 730px; }
 .auth-welcome .eyebrow { margin-bottom: 0; }
 .auth-intro { color: #4f6758; font-size: 17px; max-width: 490px; }
-.ornament { bottom: -42px; color: rgba(183, 145, 48, .17); font-family: Georgia, serif; font-size: 280px; line-height: 1; position: absolute; right: -15px; transform: rotate(10deg); }
+.ornament { display: none; }
 .auth-panel { align-self: center; background: #fffdf8; border: 1px solid #e8e2d6; border-radius: 22px; box-shadow: 0 24px 55px rgba(45, 64, 46, .08); margin: 30px; max-width: 480px; padding: clamp(30px, 4vw, 48px); width: calc(100% - 60px); }
 .panel-heading h2, .admin-auth-card h1 { font-size: 32px; margin-bottom: 10px; }
 .panel-heading > p:last-child, .admin-auth-card > p { color: #647568; font-size: 14px; margin-bottom: 28px; }
@@ -58,7 +58,7 @@ input:focus, select:focus { border-color: #ab8735; box-shadow: 0 0 0 3px rgba(20
 .form-success { background: #eaf4e9; color: #235c34; }
 .admin-link { align-items: center; border-top: 1px solid #e7e3da; color: #788378; display: flex; font-size: 13px; justify-content: space-between; margin-top: 25px; padding-top: 21px; }
 
-.admin-auth-layout { align-items: center; background: radial-gradient(circle at 17% 12%, rgba(207, 172, 89, .2), transparent 22rem), #eaf0e7; display: flex; justify-content: center; min-height: 100vh; padding: 24px; }
+.admin-auth-layout { align-items: center; background: radial-gradient(circle at 17% 12%, rgba(207, 172, 89, 0.4), transparent 22rem), linear-gradient(rgba(234, 240, 231, 0.88), rgba(234, 240, 231, 0.88)), url('/wallpaper.jpg') center/cover no-repeat; display: flex; justify-content: center; min-height: 100vh; padding: 24px; }
 .admin-auth-card { background: #fffdf8; border: 1px solid #e7e0d3; border-radius: 20px; box-shadow: 0 20px 50px rgba(27, 65, 46, .1); max-width: 465px; padding: 42px; width: 100%; }
 .admin-auth-card .brand { margin-bottom: 47px; }
 .admin-auth-card .text-link { margin-top: 21px; }
