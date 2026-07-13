@@ -123,7 +123,7 @@ function valueForField(value: string, kind: FieldType) {
   return value;
 }
 
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return response({ error: "Method not allowed." }, 405);
 
@@ -192,7 +192,7 @@ Deno.serve(async (request) => {
         .eq("target_role", role);
       if (fieldsError) throw new ApiError("Unable to validate custom fields.", 500);
 
-      const fieldMap = new Map((fields || []).map((field) => [field.id, field]));
+      const fieldMap = new Map((fields || []).map((field: any) => [field.id, field]));
       if (Object.keys(submittedValues).some((fieldId) => !fieldMap.has(fieldId))) {
         throw new ApiError("A custom field is no longer available. Refresh and try again.");
       }
@@ -223,8 +223,8 @@ Deno.serve(async (request) => {
       }
 
       const values = (fields || [])
-        .filter((field) => submittedValues[field.id]?.trim())
-        .map((field) => ({
+        .filter((field: any) => submittedValues[field.id]?.trim())
+        .map((field: any) => ({
           profile_id: created.user.id,
           field_id: field.id,
           value: valueForField(submittedValues[field.id], field.field_type as FieldType),
@@ -317,7 +317,7 @@ Deno.serve(async (request) => {
         .eq("target_role", role);
       if (fieldsError) throw new ApiError("Unable to validate custom fields.", 500);
 
-      const fieldMap = new Map((fields || []).map((field) => [field.id, field]));
+      const fieldMap = new Map((fields || []).map((field: any) => [field.id, field]));
       if (Object.keys(submittedValues).some((fieldId) => !fieldMap.has(fieldId))) {
         throw new ApiError("A custom field is no longer available. Refresh and try again.");
       }
@@ -368,8 +368,8 @@ Deno.serve(async (request) => {
       await adminClient.from("profile_field_values").delete().eq("profile_id", managedUserId);
 
       const values = (fields || [])
-        .filter((field) => submittedValues[field.id]?.trim())
-        .map((field) => ({
+        .filter((field: any) => submittedValues[field.id]?.trim())
+        .map((field: any) => ({
           profile_id: managedUserId,
           field_id: field.id,
           value: valueForField(submittedValues[field.id], field.field_type as FieldType),
@@ -387,8 +387,8 @@ Deno.serve(async (request) => {
 
     throw new ApiError("Unknown action.");
   } catch (error) {
-    if (error instanceof ApiError) return response({ error: error.message }, error.status);
+    if (error instanceof ApiError) return response({ error: error.message }, 200);
     console.error("Unhandled admin-users error", error);
-    return response({ error: "Unable to process the request." }, 500);
+    return response({ error: "Unable to process the request." }, 200);
   }
 });
