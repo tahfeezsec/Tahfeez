@@ -1,4 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSiteSettings } from "./contexts/SiteSettingsContext";
+import { DesignEditor } from "./components/admin/DesignEditor";
 import type { Session } from "@supabase/supabase-js";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
 import type {
@@ -13,7 +15,7 @@ import type {
 const ADMIN_LOGIN = "sysadmin";
 const INTERNAL_AUTH_DOMAIN = "auth.tahfeez.local";
 
-type AdminPath = "/admin" | "/admin/students" | "/admin/muhaffiz";
+type AdminPath = "/admin" | "/admin/students" | "/admin/muhaffiz" | "/admin/design";
 
 function emailForLogin(login: string, role: UserRole) {
   const normalized = login.trim().toLowerCase();
@@ -30,7 +32,7 @@ function messageFrom(error: unknown) {
 
 function currentPath(): AdminPath | "/" {
   const path = window.location.hash.replace("#", "") || "/";
-  return path === "/admin/students" || path === "/admin/muhaffiz" || path === "/admin"
+  return path === "/admin/students" || path === "/admin/muhaffiz" || path === "/admin/design" || path === "/admin"
     ? path
     : "/";
 }
@@ -178,6 +180,7 @@ function MemberLogin({
   onSignIn: (role: UserRole, login: string, password: string) => Promise<void>;
   onAdmin: () => void;
 }) {
+  const { settings } = useSiteSettings();
   const [role, setRole] = useState<ManagedRole>("student");
   const [itsId, setItsId] = useState("");
   const [password, setPassword] = useState("");
@@ -198,22 +201,15 @@ function MemberLogin({
   };
 
   return (
-    <main className="auth-layout">
-      <section className="auth-welcome">
-        <Brand />
-        <p className="eyebrow">A gentle place for steady progress</p>
-        <h1>Every ayah learned is a light carried forward.</h1>
-        <p className="auth-intro">
-          A focused home for students, Muhaffiz, and the work of preserving the Qur&apos;an.
-        </p>
-        <div className="ornament" aria-hidden="true">✦</div>
-      </section>
-
+    <main
+      className="auth-layout"
+      style={{ backgroundImage: `url(${settings.loginWallpaper})` }}
+    >
       <section className="auth-panel" aria-label="Member sign in">
         <div className="panel-heading">
           <p className="eyebrow">Welcome back</p>
-          <h2>Sign in to Tahfeez</h2>
-          <p>Use the ITS ID and password issued by your administrator.</p>
+          <h2>{settings.loginTitle}</h2>
+          <p>{settings.loginSubtitle}</p>
         </div>
 
         <div className="role-toggle" role="tablist" aria-label="Choose account type">
@@ -415,6 +411,7 @@ function AdminArea({
           <NavButton active={activePath === "/admin"} onClick={() => onNavigate("/admin")}>Overview</NavButton>
           <NavButton active={activePath === "/admin/students"} onClick={() => onNavigate("/admin/students")}>Manage Students</NavButton>
           <NavButton active={activePath === "/admin/muhaffiz"} onClick={() => onNavigate("/admin/muhaffiz")}>Manage Muhaffiz</NavButton>
+          <NavButton active={path === "/admin/design"} onClick={() => onNavigate("/admin/design")}>Design & Settings</NavButton>
         </nav>
         <div className="sidebar-footer">
           <span>{profile.full_name}</span>
@@ -422,7 +419,9 @@ function AdminArea({
         </div>
       </aside>
       <section className="admin-main">
-        {managementRole ? (
+        {path === "/admin/design" ? (
+          <DesignEditor />
+        ) : managementRole ? (
           <ManagementPage role={managementRole} />
         ) : (
           <AdminOverview onNavigate={onNavigate} />

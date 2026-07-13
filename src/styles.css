@@ -36,13 +36,8 @@ p { line-height: 1.6; }
 .text-link:hover { color: #174d36; text-decoration: underline; }
 .danger-link { color: #9a3a2b; }
 
-.auth-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(430px, .9fr); min-height: 100vh; }
-.auth-welcome { background: linear-gradient(135deg, rgba(246, 241, 229, 0.94), rgba(246, 241, 229, 0.7)), url('/wallpaper.jpg') center/cover no-repeat; display: flex; flex-direction: column; justify-content: center; min-height: 100%; overflow: hidden; padding: clamp(36px, 8vw, 115px); position: relative; }
-.auth-welcome h1 { font-size: clamp(42px, 5vw, 74px); line-height: 1.02; margin: 44px 0 23px; max-width: 730px; }
-.auth-welcome .eyebrow { margin-bottom: 0; }
-.auth-intro { color: #4f6758; font-size: 17px; max-width: 490px; }
-.ornament { display: none; }
-.auth-panel { align-self: center; background: #fffdf8; border: 1px solid #e8e2d6; border-radius: 22px; box-shadow: 0 24px 55px rgba(45, 64, 46, .08); margin: 30px; max-width: 480px; padding: clamp(30px, 4vw, 48px); width: calc(100% - 60px); }
+.auth-layout { align-items: center; background: #eaddc7 url('/wallpaper.jpg') center/contain no-repeat; background-position: var(--bg-alignment, center); background-size: var(--bg-size, contain); display: flex; justify-content: var(--login-panel-justify, flex-start); min-height: 100vh; padding-left: clamp(24px, 8vw, 120px); font-family: var(--app-font, "DM Sans", "Segoe UI", sans-serif); }
+.auth-panel { align-self: center; background: rgba(255, 253, 248, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 22px; box-shadow: 0 24px 55px rgba(45, 64, 46, .15); margin: 30px; max-width: 480px; padding: clamp(30px, 4vw, 48px); width: calc(100% - 60px); }
 .panel-heading h2, .admin-auth-card h1 { font-size: 32px; margin-bottom: 10px; }
 .panel-heading > p:last-child, .admin-auth-card > p { color: #647568; font-size: 14px; margin-bottom: 28px; }
 .role-toggle { background: #eef1ea; border-radius: 10px; display: grid; gap: 4px; grid-template-columns: 1fr 1fr; margin: 27px 0; padding: 4px; }
@@ -143,10 +138,8 @@ input:focus, select:focus { border-color: #ab8735; box-shadow: 0 0 0 3px rgba(20
 .user-actions { display: grid; gap: 8px; justify-items: end; }
 
 @media (max-width: 900px) {
-  .auth-layout { grid-template-columns: 1fr; }
-  .auth-welcome { min-height: 370px; padding: 48px 38px; }
-  .auth-welcome h1 { font-size: 47px; margin-top: 30px; }
-  .auth-panel { justify-self: center; margin: -34px 22px 32px; width: calc(100% - 44px); z-index: 1; }
+  .auth-layout { justify-content: center; padding-left: 0; }
+  .auth-panel { margin: 24px; width: calc(100% - 48px); z-index: 1; }
   .admin-area { grid-template-columns: 1fr; }
   .sidebar { padding: 18px 20px; }
   .sidebar .brand { margin: 0 0 19px; }
@@ -157,9 +150,7 @@ input:focus, select:focus { border-color: #ab8735; box-shadow: 0 0 0 3px rgba(20
 }
 
 @media (max-width: 600px) {
-  .auth-welcome { min-height: 320px; padding: 36px 25px 65px; }
-  .auth-welcome h1 { font-size: 38px; }
-  .auth-panel { margin-top: -40px; padding: 27px 23px; }
+  .auth-panel { padding: 27px 23px; margin: 16px; width: calc(100% - 32px); }
   .admin-auth-card { padding: 28px 24px; }
   .topbar { padding: 17px 19px; }
   .role-chip { display: none; }
